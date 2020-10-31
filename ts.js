@@ -25,6 +25,7 @@ export const BufferParameters = jsts.operation.buffer.BufferParameters
  * NOTE: jst/Geometry#buffer() only exposes partial BufferOp/BufferParameters API.
  */
 const BufferOp = jsts.operation.buffer.BufferOp
+export const MinimumDiameter = jsts.algorithm.MinimumDiameter
 export const GeometryFactory = jsts.geom.GeometryFactory
 
 /**
@@ -58,10 +59,17 @@ export const buffer = (opts = {}) => geometry => distance => {
   return BufferOp.bufferOp(geometry, distance, params)
 }
 
+export const circleBuffer = buffer()
+export const lineBuffer = buffer({
+  joinStyle: BufferParameters.JOIN_ROUND,
+  endCapStyle: BufferParameters.CAP_FLAT,
+})
+
+
 export const geometryFactory = new GeometryFactory()
 export const polygon = coordinates => geometryFactory.createPolygon(coordinates)
 export const lineString = coordinates => geometryFactory.createLineString(coordinates)
-export const point = coordinate => geometryFactory.createPoint(coordinate)
+export const point = ([x, y]) => geometryFactory.createPoint(new jsts.geom.Coordinate(x, y))
 export const lineSegment = ([p0, p1]) => new jsts.geom.LineSegment(p0, p1)
 export const geometryCollection = geometries => geometryFactory.createGeometryCollection(geometries)
 export const coordinates = geometries => geometries.flatMap(geometry => geometry.getCoordinates())
@@ -76,6 +84,6 @@ export const geometry0 = geometryN(0)
 export const startPoint = geometry => geometry.getStartPoint()
 export const endPoint = geometry => geometry.getEndPoint()
 
-export const geometries = geometryCollection =>
-  R.range(0, geometryCollection.getNumGeometries())
+export const geometries = geometryCollection => R
+  .range(0, geometryCollection.getNumGeometries())
   .map(i => geometryCollection.getGeometryN(i))

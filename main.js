@@ -9,9 +9,8 @@ import VectorSource from 'ol/source/Vector'
 import View from 'ol/View'
 import {Tile as TileLayer, Vector as VectorLayer} from 'ol/layer'
 import { register } from 'ol/proj/proj4'
-import { Fill, Stroke, Style, Circle } from 'ol/style'
-import { map as mapFeature } from './G_G_OLAGM'
-// import { map as mapFeature } from './G_G_OLAGS'
+import { Modify, Select, defaults as defaultInteractions } from 'ol/interaction'
+import { style } from './style'
 import json from './corridors.json'
 
 ;(() => R.range(1, 61).forEach(i => {
@@ -21,19 +20,9 @@ import json from './corridors.json'
 
 register(proj4)
 
-
-const fill = new Fill({ color: 'rgba(255,255,155,0.4)' })
-const stroke = new Stroke({ color: '#3399CC', width: 1 })
-const image = new Circle({ fill, stroke, radius: 5 })
-const defaultStyle = new Style({ fill, stroke, image })
-const style = feature => feature.get('style') || defaultStyle
-
-const corridors = new GeoJSON()
+const features = new GeoJSON()
   .readFeatures(json, { featureProjection: 'EPSG:3857' })
-  // .filter((feature, index) => index === 2)
-
-// TODO: error handling
-const features = corridors.map(mapFeature)
+  .filter((feature, index) => index === 0)
 
 const center = [1741294.4412834928, 6140380.806904582]
 const zoom = 11
@@ -44,4 +33,7 @@ const vectorLayer = new VectorLayer({ source, style })
 // const layers = [tileLayer, vectorLayer]
 const layers = [vectorLayer]
 const target = document.getElementById('map')
-new Map({ view, layers, target })
+const select = new Select({ style })
+const modify = new Modify({ features: select.getFeatures() })
+const interactions = defaultInteractions().extend([select, modify])
+new Map({ interactions, view, layers, target })

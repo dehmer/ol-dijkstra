@@ -3,25 +3,59 @@
   TACGRP.C2GM.OFF.LNE.AXSADV.GRD.MANATK
 */
 
-import Feature from 'ol/Feature'
 import * as R from 'ramda'
 import * as TS from './ts'
-import { zoneCode } from './utm'
+import { transform } from './utm'
+import { createDefaultStyle, createErrorStyle } from './style'
 
-const K = v => fn => { fn(v); return v }
-const circleBuffer = TS.buffer()
-const lineBuffer = TS.buffer({
-  joinStyle: TS.BufferParameters.JOIN_BEVEL,
-  endCapStyle: TS.BufferParameters.CAP_FLAT,
-})
+const defaultGeometry = options => {
+  const { width, line, convert } = options
 
-export const map = feature => {
-  const utmCode = zoneCode(feature.getGeometry().getGeometries()[1].getCoordinates())
-  const geometry = K(feature.getGeometry().clone())(geometry => {
-    geometry.transform('EPSG:3857', utmCode)
-  })
+  { // geometry is considered invalid when last segment is too short (< width):
+    const segments = R.aperture(2, TS.coordinates([line])).map(TS.lineSegment)
+    const lastSegment = R.last(segments)
+    if (lastSegment.getLength() < width) throw new Error('invalid geometry: last segment')
+  }
 
-  const [line, point] = TS.geometries(TS.read(geometry))
+  const buffers = [width / 2, width].map(TS.lineBuffer(line))
+  const circles = (() => {
+    const r1 = width / 2 / Math.cos(Math.atan(3 / 2))
+    const r2 = width / Math.cos(Math.atan(3 / 4))
+    return [r1, r2, r2 - r1].map(TS.circleBuffer(TS.endPoint(line)))
+  })()
+
+  const arrowPoints = TS.coordinates([
+    TS.endPoint(line),
+    TS.intersection(TS.boundaries([buffers[0], circles[0]])),
+    TS.intersection(TS.boundaries([buffers[1], circles[1]])),
+    TS.intersection([line, TS.boundary(circles[2])]),
+  ])
+
+  if (arrowPoints.length !== 6) throw new Error('invalid geometry: circle intersections')
+
+  const arrowOuter = TS.polygon(R.props([1, 3, 0, 4, 2, 1], arrowPoints))
+  const arrowInner = TS.lineString(R.props([1, 5, 2], arrowPoints))
+  const corridor = TS.union([
+    // NOTE: might lead to TopologyException for malformed arrow
+    TS.geometry0(TS.difference([buffers[0], arrowOuter])),
+    arrowOuter.buffer(1),
+  ])
+
+  // TODO: include center line and width point in edit mode
+  const geometry = TS.geometryCollection([corridor, arrowInner])
+  return createDefaultStyle({ geometry: convert(geometry) })
+}
+
+const backupGeometry = (err, options) => {
+  console.error(err)
+  const { line, point, convert } = options
+  return createErrorStyle({ geometry: convert(TS.geometryCollection([line, point])) })
+}
+
+export const style = (feature, resolution) => {
+  const geometry = feature.getGeometry().clone()
+  const { toUTM, fromUTM } = transform(geometry.getGeometries()[1])
+  const [line, point] = TS.geometries(TS.read(toUTM(geometry)))
 
   // Calculate corridor width:
   const width = 2 * TS.lineSegment([
@@ -29,32 +63,6 @@ export const map = feature => {
     point
   ].map(TS.coordinate)).getLength()
 
-  const buffers = [width / 2, width].map(lineBuffer(line))
-  const circles = (() => {
-    const r1 = width / 2 / Math.cos(Math.atan(3 / 2))
-    const r2 = width / Math.cos(Math.atan(3 / 4))
-    return [r1, r2, r2 - r1].map(circleBuffer(TS.endPoint(line)))
-  })()
-
-  const cs = TS.coordinates([
-    TS.endPoint(line),
-    TS.intersection(TS.boundaries([buffers[0], circles[0]])),
-    TS.intersection(TS.boundaries([buffers[1], circles[1]])),
-    TS.intersection([line, TS.boundary(circles[2])]),
-  ])
-
-  const arrow = TS.polygon(R.props([1, 3, 0, 4, 2, 1], cs))
-  const corridor = TS.geometryCollection([
-    TS.union([
-      TS.geometry0(TS.difference([
-        buffers[0],
-        arrow
-      ])),
-      // TODO: add minimal buffer to form proper union with corridor
-      arrow
-    ]),
-    TS.lineString(R.props([1, 5, 2], cs))
-  ])
-
-  return new Feature({ geometry: TS.write(corridor).transform(utmCode, 'EPSG:3857') })
+  const options = { width, line, point, convert: R.compose(fromUTM, TS.write) }
+  return R.tryCatch(defaultGeometry)(backupGeometry)(options)
 }
