@@ -26,13 +26,17 @@ export const BufferParameters = jsts.operation.buffer.BufferParameters
  */
 const BufferOp = jsts.operation.buffer.BufferOp
 export const MinimumDiameter = jsts.algorithm.MinimumDiameter
+export const Angle = jsts.algorithm.Angle
 export const GeometryFactory = jsts.geom.GeometryFactory
+export const AffineTransformation = jsts.geom.util.AffineTransformation
+
+export const geometryFactory = new GeometryFactory()
 
 /**
  * Setup JST/OL parser to convert between JST and OL geometries.
  * REFERENCE: http://bjornharrtell.github.io/jsts/1.6.1/doc/module-org_locationtech_jts_io_OL3Parser.html
  */
-const parser = K(new jsts.io.OL3Parser())(parser => parser.inject(
+const parser = K(new jsts.io.OL3Parser(geometryFactory))(parser => parser.inject(
   geom.Point,
   geom.LineString,
   geom.LinearRing,
@@ -42,6 +46,16 @@ const parser = K(new jsts.io.OL3Parser())(parser => parser.inject(
   geom.MultiPolygon,
   geom.GeometryCollection
 ))
+
+/**
+ * JSTS ignores the fact that ol.geom.LinearRing is not supposed to be rendered.
+ * We convert LinearRing to equivalent LineString.
+ */
+const convertToLinearRing = parser.__proto__.convertToLinearRing
+parser.__proto__.convertToLinearRing = function (linearRing) {
+  const geometry = convertToLinearRing.call(this, linearRing)
+  return new geom.LineString(geometry.getCoordinates())
+}
 
 export const read = ol_geometry => parser.read(ol_geometry)
 export const write = jst_geometry => parser.write(jst_geometry)
@@ -59,17 +73,16 @@ export const buffer = (opts = {}) => geometry => distance => {
   return BufferOp.bufferOp(geometry, distance, params)
 }
 
-export const circleBuffer = buffer()
+export const pointBuffer = buffer()
 export const lineBuffer = buffer({
   joinStyle: BufferParameters.JOIN_ROUND,
   endCapStyle: BufferParameters.CAP_FLAT,
 })
 
-
-export const geometryFactory = new GeometryFactory()
 export const polygon = coordinates => geometryFactory.createPolygon(coordinates)
 export const lineString = coordinates => geometryFactory.createLineString(coordinates)
-export const point = ([x, y]) => geometryFactory.createPoint(new jsts.geom.Coordinate(x, y))
+export const point = coordinate => geometryFactory.createPoint(coordinate)
+export const multiPoint = points => geometryFactory.createMultiPoint(points)
 export const lineSegment = ([p0, p1]) => new jsts.geom.LineSegment(p0, p1)
 export const geometryCollection = geometries => geometryFactory.createGeometryCollection(geometries)
 export const coordinates = geometries => geometries.flatMap(geometry => geometry.getCoordinates())
@@ -83,7 +96,19 @@ export const geometryN = n => geometry => geometry.getGeometryN(n)
 export const geometry0 = geometryN(0)
 export const startPoint = geometry => geometry.getStartPoint()
 export const endPoint = geometry => geometry.getEndPoint()
+export const linePoints = line => R.range(0, line.getNumPoints()).map(i => line.getPointN(i))
+export const minimumRectangle = geometry => MinimumDiameter.getMinimumRectangle(geometry)
+export const endCoordinate = R.compose(coordinate, endPoint)
 
 export const geometries = geometryCollection => R
   .range(0, geometryCollection.getNumGeometries())
   .map(i => geometryCollection.getGeometryN(i))
+
+export const translate = (angle, geometry) => distance => {
+  const α = 2 * Math.PI - angle
+  const [tx, ty] = [-Math.cos(α) * distance, Math.sin(α) * distance]
+  const transform = AffineTransformation.translationInstance(tx, ty)
+  const translated = geometry.copy()
+  translated.apply(transform)
+  return translated
+}
