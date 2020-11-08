@@ -29,6 +29,7 @@ export const MinimumDiameter = jsts.algorithm.MinimumDiameter
 export const Angle = jsts.algorithm.Angle
 export const GeometryFactory = jsts.geom.GeometryFactory
 export const AffineTransformation = jsts.geom.util.AffineTransformation
+export const Coordinate = jsts.geom.Coordinate
 
 export const geometryFactory = new GeometryFactory()
 
@@ -112,3 +113,6 @@ export const translate = (angle, geometry) => distance => {
   translated.apply(transform)
   return translated
 }
+
+// CCW angle with x-axis [-π ,π] => CW angle with azimuth [0, 2π]
+export const angleAzimuth = α => Angle.PI_TIMES_2 - Angle.normalizePositive(α - Angle.PI_OVER_2)
