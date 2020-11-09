@@ -23,7 +23,7 @@ register(proj4)
 
 const features = new GeoJSON()
   .readFeatures(json, { featureProjection: 'EPSG:3857' })
-  // .filter((feature, index) => feature.get('sidc').includes('PA----'))
+  // .filter((feature, index) => feature.get('sidc').includes('OLAR--'))
   // .filter((feature, index) => index === 1)
 
 const center = [1741294.4412834928, 6140380.806904582]
