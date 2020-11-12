@@ -1,8 +1,9 @@
 {
-  "name": "corridors",
+  "name": "ol-dijkstra",
   "version": "0.0.0",
+  "description": "OpenLayers/JSTS - Military Symbology (Corridors)",
+  "author": "Horst Dehmer <horst.dehmer@syncpoint.io> (http://syncpoint.io/)",
   "dependencies": {
-    "geodesy": "^2.2.1",
     "jsts": "^2.6.1",
     "ol": "6.4.3",
     "proj4": "^2.6.2",
