@@ -1,4 +1,4 @@
-import { Fill, Stroke, Circle, Style } from 'ol/style'
+import { Fill, Stroke, Circle, Style, Text } from 'ol/style'
 import { corridors } from './corridors'
 
 export const parameterized = sidc =>
@@ -8,7 +8,7 @@ export const style = mode => (feature, resolution) => {
   const sidc = parameterized(feature.get('sidc'))
   const fn = corridors[sidc] || (() => null)
 
-  const styles = {
+  const styles = write => ({
     outline: (geometry, options = {}) => {
       const color = options.color || '#3399CC'
       const lineDash = options.lineDash
@@ -21,8 +21,8 @@ export const style = mode => (feature, resolution) => {
         : new Stroke({ color: '#ffffff', width: innerWidth, lineDash })
 
       return [
-        new Style({ geometry, stroke: outerStroke }),
-        new Style({ geometry, stroke: innerStroke }),
+        new Style({ geometry: write(geometry), stroke: outerStroke }),
+        new Style({ geometry: write(geometry), stroke: innerStroke }),
       ]
     },
 
@@ -31,7 +31,7 @@ export const style = mode => (feature, resolution) => {
       const color = options.color || '#3399CC'
       const lineDash = options.lineDash || [5, 5]
       const stroke = new Stroke({ color, lineDash, width: 1 })
-      return [new Style({ geometry, stroke })]
+      return [new Style({ geometry: write(geometry), stroke })]
     },
 
     handles: geometry => {
@@ -39,10 +39,20 @@ export const style = mode => (feature, resolution) => {
       const fill = new Fill({ color: 'rgba(255,0,0,0.6)' })
       const stroke = new Stroke({ color: 'white', width: 3 })
       return [
-        new Style({ geometry, image: new Circle({ fill, stroke, radius: 7 }) })
+        new Style({ geometry: write(geometry), image: new Circle({ fill, stroke, radius: 7 }) })
       ]
-    }
-  }
+    },
+
+    text: (geometry, options) => new Style({
+      text: new Text(options),
+      geometry: write(geometry)
+    }),
+
+    fill: (geometry, options) => new Style ({
+      geometry: write(geometry),
+      fill: new Fill(options)
+    })
+  })
 
   const options = { mode, feature, resolution, styles }
   return fn(options)

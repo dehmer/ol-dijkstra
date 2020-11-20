@@ -4,7 +4,6 @@
 */
 
 import * as R from 'ramda'
-import { Style, Text, Fill } from 'ol/style'
 import * as TS from './ts'
 import { format } from './format'
 
@@ -20,7 +19,7 @@ const arrowCoordinates = (width, line) => {
 }
 
 const G_G_OLAGM = options => {
-  const { width, line, point, write, styles } = options
+  const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
     [0, 0],
     [3/4, 1],
@@ -45,17 +44,16 @@ const G_G_OLAGM = options => {
   ])
 
   return [
-    styles.outline(write(corridor)),
-    styles.outline(write(arrow)),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line))))
-  ].flat()
+    styles.outline(corridor),
+    styles.outline(arrow),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
+  ]
 }
 
 // Similar to G_G_OLAGM.
 const G_G_OLAGS = options => {
-  const { width, line, point, write, styles } = options
+  const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
     [0, 0], [3/4, 1], [3/4, -1], [3/4, 0]
   ])
@@ -69,15 +67,14 @@ const G_G_OLAGS = options => {
   ])
 
   return [
-    styles.outline(write(corridor)),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line))))
-  ].flat()
+    styles.outline(corridor),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
+  ]
 }
 
 const G_G_PA = options => {
-  const { width, line, point, write, styles } = options
+  const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
     [10/26, 0], [30/26, 1], [30/26, -1], [30/26, 0],
     [23/26, 30/26], [0, 0], [23/26, -30/26]
@@ -92,17 +89,16 @@ const G_G_PA = options => {
   ])
 
   return [
-    styles.outline(write(corridor)),
-    styles.outline(write(TS.lineString(R.props([4, 5, 6], aps))), { lineDash: [12, 10] }),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line))))
-  ].flat()
+    styles.outline(corridor),
+    styles.outline(TS.lineString(R.props([4, 5, 6], aps)), { lineDash: [12, 10] }),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
+  ]
 }
 
 // Counterattack
 const G_T_K = options => {
-  const { width, line, point, write, styles, resolution } = options
+  const { width, line, point, styles, resolution } = options
   const aps = arrowCoordinates(width, line)([
     [0, 0], [3/4, 1], [3/4, -1], [3/4, 0]
   ])
@@ -122,26 +118,22 @@ const G_T_K = options => {
   const flip = α => α > Math.PI / 2 && α < 3 * Math.PI / 2
 
   return [
-    styles.outline(write(corridor), { lineDash: [12, 10] }),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line)))),
-    new Style({
-      geometry: write(TS.point(aps[3])),
-      text: new Text({
-        font,
-        textAlign: flip(angle) ? 'start' : 'end',
-        offsetX: flip(angle) ? -10 : 10,
-        rotation: flip(angle) ? angle - Math.PI : angle,
-        text: 'CATK'
-      })
+    styles.outline(corridor, { lineDash: [12, 10] }),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)])),
+    styles.text(TS.point(aps[3]), {
+      font,
+      textAlign: flip(angle) ? 'start' : 'end',
+      offsetX: flip(angle) ? -10 : 10,
+      rotation: flip(angle) ? angle - Math.PI : angle,
+      text: 'CATK'
     })
-  ].flat()
+  ]
 }
 
 // Counterattack by Fire
 const G_T_KF = options => {
-  const { width, line, point, write, styles, resolution } = options
+  const { width, line, point, styles, resolution } = options
   const aps = arrowCoordinates(width, line)([
     [28/26, 0], [48/26, 1], [48/26, -1], [48/26, 0],
     [37/26, 41/26], [15/26, 1], [15/26, -1], [37/26, -41/26],
@@ -164,32 +156,28 @@ const G_T_KF = options => {
   const flip = α => α > Math.PI / 2 && α < 3 * Math.PI / 2
 
   return [
-    styles.outline(write(corridor), { lineDash: [12, 10] }),
-    styles.outline(write(TS.lineString(R.props([4, 5, 6, 7], aps))), { lineDash: [12, 10] }),
-    styles.outline(write(TS.lineString(R.props([8, 9], aps))), { lineDash: [12, 10] }),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line)))),
-    new Style({
-      geometry: write(TS.point(aps[3])),
-      text: new Text({
-        font,
-        textAlign: flip(angle) ? 'start' : 'end',
-        offsetX: flip(angle) ? -10 : 10,
-        rotation: flip(angle) ? angle - Math.PI : angle,
-        text: 'CATK'
-      })
+    styles.outline(TS.union([
+      corridor,
+      TS.lineString(R.props([4, 5, 6, 7], aps)),
+      TS.lineString(R.props([8, 9], aps))
+    ]), { lineDash: [12, 10] }),
+
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)])),
+    styles.text(TS.point(aps[3]), {
+      font,
+      textAlign: flip(angle) ? 'start' : 'end',
+      offsetX: flip(angle) ? -10 : 10,
+      rotation: flip(angle) ? angle - Math.PI : angle,
+      text: 'CATK'
     }),
-    new Style({
-      geometry: write(TS.polygon(R.props([10, 11, 12, 10], aps))),
-      fill: new Fill({ color: 'black' })
-    })
-  ].flat()
+    styles.fill(TS.polygon(R.props([10, 11, 12, 10], aps)), { color: 'black' })
+  ]
 }
 
 // G_G_OLAGS with nasty crossing in first segment.
 const G_G_OLAA = options => {
-  const { width, line, point, write, styles } = options
+  const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
     [0, 0], [3/4, 1], [3/4, 1/2], [3/4, 0], [3/4, -1/2], [3/4, -1]
   ])
@@ -239,16 +227,15 @@ const G_G_OLAA = options => {
   ])
 
   return [
-    styles.outline(write(corridor)),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line))))
-  ].flat()
+    styles.outline(corridor),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
+  ]
 }
 
 // AXIS OF ADVANCE - ATTACK, ROTARY WING
 const G_G_OLAR = options => {
-  const { width, line, point, write, styles } = options
+  const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
     [0, 0], [3/4, 1], [3/4, 1/2], [3/4, 0], [3/4, -1/2], [3/4, -1]
   ])
@@ -327,15 +314,14 @@ const G_G_OLAR = options => {
   ])
 
   return [
-    styles.outline(write(corridor)),
-    styles.dashed(write(line)),
-    styles.handles(write(point)),
-    styles.handles(write(TS.multiPoint(TS.linePoints(line))))
-  ].flat()
+    styles.outline(corridor),
+    styles.dashed(line),
+    styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
+  ]
 }
 
 export const style = fn => options => {
-  const { feature } = options
+  const { feature, styles } = options
   const geometry = feature.getGeometry()
   const reference = geometry.getGeometries()[0].getFirstCoordinate()
   const { read, write } = format(reference)
@@ -347,11 +333,14 @@ export const style = fn => options => {
     point
   ].map(TS.coordinate)).getLength()
 
+  // console.time(`style:${feature.get('sidc')}`)
+  // console.timeEnd(`style:${feature.get('sidc')}`)
+
   return fn({
     ...options,
     width, line, point,
-    read, write
-  })
+    styles: styles(write)
+  }).flat()
 }
 
 export const corridors = {
