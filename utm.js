@@ -1,9 +1,9 @@
 import proj4 from 'proj4'
 
 // [EPSG:3857] -> string
-export const zone = reference => {
+export const zone = coordinate => {
   const proj = proj4('EPSG:3857', 'EPSG:4326')
-  const [longitude, latitude] = proj.forward(reference)
+  const [longitude, latitude] = proj.forward(coordinate)
   const zone = Math.ceil((longitude + 180) / 6)
   const south = latitude < 0
   const utmCode = (south ? 32700 : 32600) + zone
@@ -11,9 +11,10 @@ export const zone = reference => {
 }
 
 export const transform = reference => {
-  const code = zone(reference.getCoordinates())
+  // NOTE: transform changes coordinates inplace; we clone geometry unconditionally:
+  const code = zone(reference)
   return {
-    toUTM: geometry => geometry.transform('EPSG:3857', code),
-    fromUTM: geometry => geometry.transform(code, 'EPSG:3857')
+    toUTM: geometry => geometry.clone().transform('EPSG:3857', code),
+    fromUTM: geometry => geometry.clone().transform(code, 'EPSG:3857')
   }
 }
