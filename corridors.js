@@ -21,13 +21,8 @@ const arrowCoordinates = (width, line) => {
 const G_G_OLAGM = options => {
   const { width, line, point, styles } = options
   const aps = arrowCoordinates(width, line)([
-    [0, 0],
-    [3/4, 1],
-    [3/4, 1/2],
-    [3/8, 0],
-    [3/4, -1/2],
-    [3/4, -1],
-    [3/4, 0]
+    [0, 0], [3/4, 1], [3/4, 1/2],
+    [3/8, 0], [3/4, -1/2], [3/4, -1], [3/4, 0]
   ])
 
   const arrow = TS.polygon(R.props([0, 1, 2, 3, 4, 5, 0], aps))
@@ -44,9 +39,8 @@ const G_G_OLAGM = options => {
   ])
 
   return [
-    styles.outline(corridor),
-    styles.outline(arrow),
-    styles.dashed(line),
+    styles.solidLine(TS.union([corridor, arrow])),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
   ]
 }
@@ -67,8 +61,8 @@ const G_G_OLAGS = options => {
   ])
 
   return [
-    styles.outline(corridor),
-    styles.dashed(line),
+    styles.solidLine(corridor),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
   ]
 }
@@ -89,9 +83,9 @@ const G_G_PA = options => {
   ])
 
   return [
-    styles.outline(corridor),
-    styles.outline(TS.lineString(R.props([4, 5, 6], aps)), { lineDash: [12, 10] }),
-    styles.dashed(line),
+    styles.solidLine(corridor),
+    styles.dashedLine(TS.lineString(R.props([4, 5, 6], aps))),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
   ]
 }
@@ -118,8 +112,8 @@ const G_T_K = options => {
   const flip = α => α > Math.PI / 2 && α < 3 * Math.PI / 2
 
   return [
-    styles.outline(corridor, { lineDash: [12, 10] }),
-    styles.dashed(line),
+    styles.dashedLine(corridor),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)])),
     styles.text(TS.point(aps[3]), {
       font,
@@ -156,13 +150,13 @@ const G_T_KF = options => {
   const flip = α => α > Math.PI / 2 && α < 3 * Math.PI / 2
 
   return [
-    styles.outline(TS.union([
+    styles.dashedLine(TS.union([
       corridor,
       TS.lineString(R.props([4, 5, 6, 7], aps)),
       TS.lineString(R.props([8, 9], aps))
-    ]), { lineDash: [12, 10] }),
+    ])),
 
-    styles.dashed(line),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)])),
     styles.text(TS.point(aps[3]), {
       font,
@@ -227,8 +221,8 @@ const G_G_OLAA = options => {
   ])
 
   return [
-    styles.outline(corridor),
-    styles.dashed(line),
+    styles.solidLine(corridor),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
   ]
 }
@@ -314,8 +308,8 @@ const G_G_OLAR = options => {
   ])
 
   return [
-    styles.outline(corridor),
-    styles.dashed(line),
+    styles.solidLine(corridor),
+    styles.wireFrame(line),
     styles.handles(TS.multiPoint([point, ...TS.linePoints(line)]))
   ]
 }
