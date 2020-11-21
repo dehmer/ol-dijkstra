@@ -1,5 +1,5 @@
 import { Fill, Stroke, Circle, Style, Text } from 'ol/style'
-import { corridors } from './corridors'
+import corridors from './corridors/index'
 import * as SIDC from './sidc'
 import { primaryColor, accentColor } from './color-schemes'
 
