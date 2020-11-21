@@ -1,7 +1,14 @@
-import { Fill, Stroke, Circle, Style, Text } from 'ol/style'
+import * as ol_style from 'ol/style'
 import corridors from './corridors/index'
 import * as SIDC from './sidc'
 import { primaryColor, accentColor } from './color-schemes'
+
+const style = options => new ol_style.Style(options)
+const stroke = options => new ol_style.Stroke(options)
+const circle = options => new ol_style.Circle(options)
+const fill = options => new ol_style.Fill(options)
+const text = options => new ol_style.Text(options)
+const regularShape = options => new ol_style.RegularShape(options)
 
 const scheme = 'medium'
 const styleOptions = feature => {
@@ -22,7 +29,7 @@ const styles = (mode, options) => write => ({
     return [
       { width: options.thick, color: options.accentColor, lineDash: options.dashPattern },
       { width: options.thin, color: options.primaryColor, lineDash: options.dashPattern }
-    ].map(stroke => new Style({ stroke: new Stroke(stroke), geometry }))
+    ].map(options => style({ stroke: stroke(options), geometry }))
   },
 
   dashedLine: inGeometry => {
@@ -30,34 +37,49 @@ const styles = (mode, options) => write => ({
     return [
       { width: options.thick, color: options.accentColor, lineDash: [20, 10] },
       { width: options.thin, color: options.primaryColor, lineDash: [20, 10] }
-    ].map(stroke => new Style({ stroke: new Stroke(stroke), geometry }))
+    ].map(options => style({ stroke: stroke(options), geometry }))
   },
 
   wireFrame: inGeometry => {
     if (mode !== 'selected') return []
-    const stroke = new Stroke({ color: 'red', lineDash: [20, 8, 2, 8], width: 1.5 })
-    return new Style({ geometry: write(inGeometry), stroke })
+    const options = { color: 'red', lineDash: [20, 8, 2, 8], width: 1.5 }
+    return style({ geometry: write(inGeometry), stroke: stroke(options) })
   },
 
   handles: inGeometry => {
-    if (mode !== 'selected') return []
-    const fill = new Fill({ color: 'rgba(255,0,0,0.6)' })
-    const stroke = new Stroke({ color: 'white', width: 3 })
-    return new Style({ geometry: write(inGeometry), image: new Circle({ fill, stroke, radius: 7 }) })
+    if (mode === 'selected') return style({
+      geometry: write(inGeometry),
+      image: circle({
+        fill: fill({ color: 'rgba(255,0,0,0.6)' }),
+        stroke: stroke({ color: 'white', width: 3 }),
+        radius: 7
+      })
+    })
+    else if (mode === 'multi') return style({
+      geometry: write(inGeometry),
+      image: regularShape({
+        fill: fill({ color: 'white' }),
+        stroke: stroke({ color: 'black', width: 1 }),
+        radius: 6,
+        points: 4,
+        angle: Math.PI / 4
+      })
+    })
+    else return []
   },
 
-  text: (inGeometry, options) => new Style({
-    text: new Text(options),
+  text: (inGeometry, options) => style({
+    text: text(options),
     geometry: write(inGeometry)
   }),
 
-  fill: (inGeometry, options) => new Style ({
+  fill: (inGeometry, options) => style({
     geometry: write(inGeometry),
-    fill: new Fill(options)
+    fill: fill(options)
   })
 })
 
-export const style = mode => (feature, resolution) => {
+export default mode => (feature, resolution) => {
   const style = () => {
     const sidc = SIDC.normalize(feature.get('sidc'))
     const fn = corridors[sidc] || (() => null)
